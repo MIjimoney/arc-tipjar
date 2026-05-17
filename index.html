@@ -430,7 +430,7 @@
   // ─── WALLET CONNECTION ────────────────────────────────────
   async function connectWallet() {
     if (!window.ethereum) {
-      showStatus("MetaMask not found. Please install it first.", "error");
+      showStatus("No wallet found. Please install Rabby or MetaMask first.", "error");
       return;
     }
 
@@ -439,33 +439,48 @@
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
       connectedAddress = accounts[0];
 
-      // Switch to Arc Testnet
-      try {
-        await window.ethereum.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: ARC_CHAIN_ID }]
-        });
-      } catch (switchErr) {
-        // Chain not added yet — add it
-        if (switchErr.code === 4902) {
-          await window.ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [ARC_TESTNET]
-          });
-        } else {
-          throw switchErr;
-        }
-      }
-
-      // Update UI
+      // Update UI immediately after wallet approves — don't wait for chain switch
       document.getElementById("walletAddr").textContent =
         connectedAddress.slice(0, 6) + "..." + connectedAddress.slice(-4);
       document.getElementById("walletInfo").classList.add("visible");
       document.getElementById("connectBtn").style.display = "none";
       document.getElementById("tipSection").classList.add("visible");
 
+      // Now try to switch to Arc Testnet in the background
+      showStatus("Switching to Arc Testnet...", "loading");
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: ARC_CHAIN_ID }]
+        });
+        // Clear the switching message on success
+        document.getElementById("statusMsg").className = "status-msg";
+      } catch (switchErr) {
+        // Chain not added yet — add it
+        if (switchErr.code === 4902 || switchErr.code === -32603) {
+          try {
+            await window.ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [ARC_TESTNET]
+            });
+            document.getElementById("statusMsg").className = "status-msg";
+          } catch (addErr) {
+            showStatus("Please add Arc Testnet manually to your wallet.", "error");
+          }
+        } else if (switchErr.code === 4001) {
+          showStatus("Please switch to Arc Testnet in your wallet to send tips.", "error");
+        } else {
+          // Don't block the user — just warn them
+          showStatus("Please make sure you're on Arc Testnet in your wallet.", "error");
+        }
+      }
+
     } catch (err) {
-      showStatus("Connection failed: " + (err.message || "Unknown error"), "error");
+      if (err.code === 4001) {
+        showStatus("Connection rejected. Please approve the wallet connection.", "error");
+      } else {
+        showStatus("Connection failed: " + (err.message || "Unknown error"), "error");
+      }
     }
   }
 
