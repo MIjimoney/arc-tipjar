@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Miji | Tip Jar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080b10;
+      --surface: #0f1318;
+      --border: #1e2530;
+      --accent: #00d4aa;
+      --accent2: #0099ff;
+      --text: #e8edf5;
+      --muted: #5a6478;
+      --danger: #ff4d6d;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      padding: 24px;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Glow blobs */
+    body::after {
+      content: '';
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,212,170,0.06) 0%, transparent 70%);
+      top: -200px;
+      right: -200px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px 36px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Top accent bar */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 24px; right: 24px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,212,170,0.08);
+      border: 1px solid rgba(0,212,170,0.2);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+      margin-bottom: 24px;
+    }
+
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .avatar {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      margin-bottom: 16px;
+      box-shadow: 0 0 24px rgba(0,212,170,0.2);
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .handle {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .bio {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 28px;
+    }
+
+    .section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .amounts {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .amount-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 0;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .amount-btn:hover, .amount-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(0,212,170,0.06);
+    }
+
+    .custom-input-wrap {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .currency-tag {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .custom-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px 12px 60px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .custom-input:focus {
+      border-color: var(--accent);
+    }
+
+    .custom-input::placeholder { color: var(--muted); }
+
+    .send-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      letter-spacing: 0.02em;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,212,170,0.3);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .connect-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--accent);
+      background: rgba(0,212,170,0.06);
+      color: var(--accent);
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .connect-btn:hover {
+      background: rgba(0,212,170,0.12);
+      transform: translateY(-2px);
+    }
+
+    .wallet-info {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0,212,170,0.05);
+      border: 1px solid rgba(0,212,170,0.15);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+    }
+
+    .wallet-info.visible { display: flex; }
+
+    .wallet-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .wallet-addr {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status-msg {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      display: none;
+      line-height: 1.5;
+    }
+
+    .status-msg.success {
+      display: block;
+      background: rgba(0,212,170,0.08);
+      border: 1px solid rgba(0,212,170,0.2);
+      color: var(--accent);
+    }
+
+    .status-msg.error {
+      display: block;
+      background: rgba(255,77,109,0.08);
+      border: 1px solid rgba(255,77,109,0.2);
+      color: var(--danger);
+    }
+
+    .status-msg.loading {
+      display: block;
+      background: rgba(0,153,255,0.08);
+      border: 1px solid rgba(0,153,255,0.2);
+      color: var(--accent2);
+    }
+
+    .wallet-section { margin-bottom: 20px; }
+
+    .tip-section { display: none; }
+    .tip-section.visible { display: block; }
+
+    .footer {
+      margin-top: 28px;
+      text-align: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .footer span {
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <div class="badge">
+    <div class="dot"></div>
+    LIVE ON ARC TESTNET
+  </div>
+
+  <div class="avatar">🥷</div>
+  <h1>Miji Sensei</h1>
+  <div class="handle">@miji_sensei</div>
+  <p class="bio">Trader. Builder. Crypto-native. Early Arc ecosystem contributor. Send me a tip if my content helped you.</p>
+
+  <div class="divider"></div>
+
+  <!-- Wallet connection -->
+  <div class="wallet-section">
+    <div class="wallet-info" id="walletInfo">
+      <div class="wallet-dot"></div>
+      <div class="wallet-addr" id="walletAddr">—</div>
+    </div>
+    <button class="connect-btn" id="connectBtn" onclick="connectWallet()">
+      Connect Wallet
+    </button>
+  </div>
+
+  <!-- Tip section (shown after connect) -->
+  <div class="tip-section" id="tipSection">
+    <p class="section-label">Choose Amount (USDC)</p>
+
+    <div class="amounts">
+      <button class="amount-btn" onclick="selectAmount(1, this)">$1</button>
+      <button class="amount-btn" onclick="selectAmount(2, this)">$2</button>
+      <button class="amount-btn" onclick="selectAmount(5, this)">$5</button>
+      <button class="amount-btn" onclick="selectAmount(10, this)">$10</button>
+    </div>
+
+    <div class="custom-input-wrap">
+      <span class="currency-tag">USDC</span>
+      <input
+        class="custom-input"
+        id="customAmount"
+        type="number"
+        placeholder="Custom amount..."
+        min="0.01"
+        step="0.01"
+        oninput="clearPresets()"
+      />
+    </div>
+
+    <button class="send-btn" id="sendBtn" onclick="sendTip()">
+      Send Tip ⚡
+    </button>
+
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+
+  <div class="footer">
+    Powered by <span>Arc Network</span> · USDC on-chain
+  </div>
+
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────
+  const RECIPIENT = "0xc3969f5650d194f653b2c390a7b4c6e9fdee9a25";
+  const ARC_CHAIN_ID = "0x4D4"; // 1236 in hex — Arc Testnet
+  const ARC_TESTNET = {
+    chainId: "0x4D4",
+    chainName: "Arc Testnet",
+    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+    rpcUrls: ["https://rpc.testnet.arc.network"],
+    blockExplorerUrls: ["https://testnet.arcscan.app"]
+  };
+
+  // USDC contract on Arc Testnet
+  const USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
+  const USDC_DECIMALS = 6;
+
+  // ERC-20 transfer ABI (minimal)
+  const TRANSFER_ABI = [
+    "function transfer(address to, uint256 amount) returns (bool)"
+  ];
+
+  let selectedAmount = null;
+  let connectedAddress = null;
+
+  // ─── WALLET CONNECTION ────────────────────────────────────
+  async function connectWallet() {
+    if (!window.ethereum) {
+      showStatus("MetaMask not found. Please install it first.", "error");
+      return;
+    }
+
+    try {
+      // Request account
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      connectedAddress = accounts[0];
+
+      // Switch to Arc Testnet
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: ARC_CHAIN_ID }]
+        });
+      } catch (switchErr) {
+        // Chain not added yet — add it
+        if (switchErr.code === 4902) {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [ARC_TESTNET]
+          });
+        } else {
+          throw switchErr;
+        }
+      }
+
+      // Update UI
+      document.getElementById("walletAddr").textContent =
+        connectedAddress.slice(0, 6) + "..." + connectedAddress.slice(-4);
+      document.getElementById("walletInfo").classList.add("visible");
+      document.getElementById("connectBtn").style.display = "none";
+      document.getElementById("tipSection").classList.add("visible");
+
+    } catch (err) {
+      showStatus("Connection failed: " + (err.message || "Unknown error"), "error");
+    }
+  }
+
+  // ─── AMOUNT SELECTION ─────────────────────────────────────
+  function selectAmount(val, btn) {
+    selectedAmount = val;
+    document.getElementById("customAmount").value = "";
+    document.querySelectorAll(".amount-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  }
+
+  function clearPresets() {
+    selectedAmount = null;
+    document.querySelectorAll(".amount-btn").forEach(b => b.classList.remove("active"));
+  }
+
+  // ─── SEND TIP ─────────────────────────────────────────────
+  async function sendTip() {
+    const customVal = parseFloat(document.getElementById("customAmount").value);
+    const amount = selectedAmount || (isNaN(customVal) ? null : customVal);
+
+    if (!amount || amount <= 0) {
+      showStatus("Pick or enter an amount first.", "error");
+      return;
+    }
+
+    if (!connectedAddress) {
+      showStatus("Connect your wallet first.", "error");
+      return;
+    }
+
+    const sendBtn = document.getElementById("sendBtn");
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Sending...";
+    showStatus("Waiting for wallet confirmation...", "loading");
+
+    try {
+      // Build ERC-20 transfer calldata manually
+      // transfer(address,uint256) selector = 0xa9059cbb
+      const amountInUnits = BigInt(Math.round(amount * 10 ** USDC_DECIMALS));
+      const amountHex = amountInUnits.toString(16).padStart(64, "0");
+      const recipientHex = RECIPIENT.slice(2).toLowerCase().padStart(64, "0");
+      const data = "0xa9059cbb" + recipientHex + amountHex;
+
+      const txHash = await window.ethereum.request({
+        method: "eth_sendTransaction",
+        params: [{
+          from: connectedAddress,
+          to: USDC_ADDRESS,
+          data: data,
+          gas: "0x186A0" // 100,000 gas limit
+        }]
+      });
+
+      showStatus(
+        `✅ Tip sent! Tx: ${txHash.slice(0,10)}...${txHash.slice(-6)}\n\nView on explorer: testnet.arcscan.app`,
+        "success"
+      );
+      sendBtn.textContent = "Tip Sent! 🎉";
+
+    } catch (err) {
+      if (err.code === 4001) {
+        showStatus("Transaction cancelled.", "error");
+      } else {
+        showStatus("Error: " + (err.message || "Something went wrong"), "error");
+      }
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Send Tip ⚡";
+    }
+  }
+
+  // ─── STATUS HELPER ────────────────────────────────────────
+  function showStatus(msg, type) {
+    const el = document.getElementById("statusMsg");
+    el.textContent = msg;
+    el.className = "status-msg " + type;
+  }
+</script>
+
+</body>
+</html>
